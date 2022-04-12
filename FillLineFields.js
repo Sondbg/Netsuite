@@ -3,44 +3,67 @@
  * @NScriptType ClientScript
  * @NModuleScope SameAccount
  */
- define(['N/currentRecord'], function (record,context){
-
-    function pageInit(context){
-SetLocationLine(context);
+define(['N/currentRecord'], function (context){
+function pageInit(context){
+    SetLocationLine(context);
 }
-function SetLineAmount(context){
-var currentRecord=context.currentRecord;
-var rate=currentRecord.getCurrentSublistValue({
-sublistId:'item',
-fieldId:'rate'
-});
-var km=currentRecord.getCurrentSublistValue({
-sublistId:'item',
-fieldId:'custcol3'
-});
-var LineAmount=rate*km;
+function fieldChanged(context){
+  traveledKM(context);
+}
+    function traveledKM(context){
+    if (context.fieldId==='custbody_aqt_nanchalen_kilometraj' || context.fieldId==='custbody_aqt_kraen_kilometraj'){
+	var currentRecord=context.currentRecord;
+var startKM=context.currentRecord.getValue({
+      fieldId: 'custbody_aqt_nanchalen_kilometraj'
+    });
+var endKM=context.currentRecord.getValue({
+      fieldId: 'custbody_aqt_kraen_kilometraj'
+    });
+var travelKM=endKM-startKM;
+	context.currentRecord.setValue({
+     fieldId:'custbody_aqt_izm_km_kilonetraj',
+     value:travelKM
+    });
+        }
+  }
+	function LineInit(context){
+  SetLocationLine(context);
+    }
+  function traveledKM(context){
+    if (context.fieldId=='custbody_aqt_nanchalen_kilometraj' || context.fieldId=='custbody_aqt_kraen_kilometraj'){
+	var currentRecord=context.currentRecord;
+var startKM=context.currentRecord.getValue({
+      fieldId: 'custbody_aqt_nanchalen_kilometraj'
+    });
+var endKM=context.currentRecord.getValue({
+      fieldId: 'custbody_aqt_kraen_kilometraj'
+    });
+var travelKM=endKM-startKM;
+	currentRecord.setValue({
+     fieldId:'custbody_aqt_izm_km_kilonetraj',
+     value:travelKM,
+    ignoreFieldChange: true
+    });
+        }
+  }
+  function SetLocationLine(context){
+    var currentRecord=context.currentRecord;
 currentRecord.setCurrentSublistValue({
-sublistId: 'item',
-fieldId: 'amount',
-value: LineAmount,
-ignoreFieldChange: true
-});
-}
-function LineInit(context){
-SetLocationLine(context);
-}
-function SetLocationLine(context){
-var currentRecord=context.currentRecord;
+    sublistId: 'item',
+    fieldId: 'location',
+    value: 102,
+    ignoreFieldChange: true
+    });
 currentRecord.setCurrentSublistValue({
-sublistId: 'item',
-fieldId: 'location',
-value: 102,
-ignoreFieldChange: true
-});
-}
-return{
-    fieldChanged: SetLineAmount,
-    pageInit: pageInit,
-      lineInit: LineInit
-};
+    sublistId: 'item',
+    fieldId: 'item',
+    value: 5060,
+    ignoreFieldChange: false
+    });
+  }
+    return{
+        fieldChanged: fieldChanged,
+        pageInit: pageInit,
+      	lineInit: LineInit
+    };
 });
