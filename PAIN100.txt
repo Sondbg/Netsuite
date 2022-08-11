@@ -1,0 +1,91 @@
+<#function getReferenceNote payment>
+<#assign paidTransactions = transHash[payment.internalid]>
+<#assign referenceNote = "">
+<#assign paidTransactionsCount = paidTransactions?size>
+<#if (paidTransactionsCount >= 1)>
+<#list paidTransactions as transaction>
+<#if transaction.tranid?has_content>
+<#if referenceNote?has_content>
+<#assign referenceNote = referenceNote + ", " + transaction.tranid>
+<#else>
+<#assign referenceNote = transaction.tranid>
+</#if>
+</#if>
+</#list>
+</#if>
+<#return referenceNote>
+</#function>
+#OUTPUT START#
+<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:pain.001.001.03" xmlns:xsi="http://www.w3.org/2001/XMLSchemainstance">
+<CstmrCdtTrfInitn>
+<GrpHdr>
+<MsgId>${setMaxLength((pfa.id),35)}</MsgId>
+<CreDtTm>${pfa.custrecord_2663_file_creation_timestamp?date?string("yyyy-MM-dd")}T${pfa.custrecord_2663_file_creation_timestamp?time?string("HH:mm:ss")}</CreDtTm>
+<NbOfTxs>${setMaxLength((payments?size?c),15)}</NbOfTxs>
+<CtrlSum>${formatAmount(computeTotalAmount(payments),"decLessThan1")}</CtrlSum>
+<InitgPty>
+<Nm>${cbank.custpage_eft_custrecord_2663_company_name}</Nm>
+</InitgPty>
+</GrpHdr>
+<PmtInf>
+<PmtInfId>${pfa.id}-1</PmtInfId>
+<PmtMtd>TRF</PmtMtd>
+<PmtTpInf>
+<SvcLvl>
+<Cd>SEPA</Cd>
+</SvcLvl>
+</PmtTpInf>
+<ReqdExctnDt>${pfa.custrecord_2663_process_date?string("yyyy-MM-dd")}</ReqdExctnDt>
+<Dbtr>
+<Nm>${setMaxLength(convertToLatinCharSet(cbank.custpage_eft_custrecord_2663_company_name),70)}</Nm>
+</Dbtr>
+<DbtrAcct>
+<Id>
+<IBAN>${cbank.custpage_eft_custrecord_2663_iban}</IBAN>
+</Id>
+</DbtrAcct>
+<DbtrAgt>
+<FinInstnId>
+</FinInstnId>
+</DbtrAgt>
+<UltmtDbtr>
+</UltmtDbtr>
+<ChrgBr>SLEV</ChrgBr>
+<#list payments as payment>
+<#assign ebank = ebanks[payment_index]>
+<#assign entity = entities[payment_index]>
+<CdtTrfTxInf>
+<PmtId>
+<EndToEndId>${pfa.id}-${payment.tranid}</EndToEndId>
+</PmtId>
+<Amt>
+<InstdAmt Ccy="${setMaxLength(getCurrencySymbol(payment.currency)?upper_case,3)}">${setMaxLength(formatAmount(getAmount(payment),"decLessThan1"),11)}</InstdAmt>
+</Amt>
+<CdtrAgt>
+<FinInstnId>
+<BIC>${ebank.custrecord_2663_entity_bic}</BIC>
+</FinInstnId>
+</CdtrAgt>
+<Cdtr>
+<Nm>${setMaxLength(convertToLatinCharSet(buildEntityName(entity, false)?replace('&', ' and ')),35)}</Nm>
+<PstlAdr>
+<Ctry>${convertToLatinCharSet(entity.billcountrycode)}</Ctry>
+<AdrLine>${setMaxLength(convertToLatinCharSet(entity.billaddress?replace('<br />',',')),70)}</AdrLine>
+</PstlAdr>
+</Cdtr>
+<CdtrAcct>
+<Id>
+<IBAN>${ebank.custrecord_2663_entity_iban}</IBAN>
+</Id>
+</CdtrAcct>
+<RmtInf>
+<Ustrd>${setMaxLength(convertToLatinCharSet(getReferenceNote(payment)),140)}</Ustrd>
+</RmtInf>
+</CdtTrfTxInf>
+</#list>
+</PmtInf>
+</CstmrCdtTrfInitn>
+</Document>
+#OUTPUT END#
+

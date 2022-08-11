@@ -1,0 +1,66 @@
+<#function listPayments>
+<#assign totalAmount=0>
+<#assign numberOfOrders=0>
+<#list payments as payment>
+<#assign totalAmount = totalAmount + getAmount(payment,true)>
+<#assign numberOfOrders = numberOfOrders + 1>
+</#list>
+totalAmount=setMaxLength(totalAmount,17)
+numberOfOrders=setMaxLength(numberOfOrders,5)
+<#return [totalAmount, numberOfOrders]>
+</#function>
+#OUTPUT START#
+:02:${formatAmount(listPayments()[0],'dec',',')}
+:03:${listPayments()[1]}
+:04:RZBR
+<#list payments as payment>
+<#assign ebank = ebanks[payment_index]>
+<#assign entity = entities[payment_index]>
+
+:20:${setMaxLength(payment.tranid,16)?replace("/","")}
+:32A:${pfa.custrecord_2663_file_creation_timestamp?date?string("yyMMdd")}RON${formatAmount(getAmount(payment,true),'dec',',')}
+:50:${setMaxLength(cbank.custpage_eft_custrecord_2663_company_name,35)}
+:52A:/D/${setMaxLength(cbank.custpage_eft_custrecord_2663_iban,24)}
+RZBR
+:57A:${setMaxLength(ebank.custrecord_2663_entity_bank_code,11)}
+:57D:${setMaxLength(ebank.custrecord_2663_entity_bank_name,35)}
+:59:/${setMaxLength(ebank.custrecord_2663_entity_iban,24)}
+${setMaxLength(buildEntityName(entity,false),35)}
+
+
+:70:${setMaxLength(buildUnstructuredInfo(payment),35)}
+${setMaxLength(buildMemo(payment),35)}
+</#list>
+#OUTPUT END#
+<#function buildUnstructuredInfo payment>
+<#assign paidTransactions = transHash[payment.internalid]>
+<#assign referenceNote = "">
+<#assign paidTransactionsCount = paidTransactions?size>
+<#if (paidTransactionsCount >= 1)>
+<#list paidTransactions as transaction>
+<#if transaction.tranid?has_content>
+<#assign referenceNote = referenceNote + transaction.tranid>
+<#if (paidTransactionsCount > 1 && transaction_index != paidTransactionsCount - 1)>
+<#assign referenceNote = referenceNote + ",">
+</#if>
+</#if>
+</#list>
+</#if>
+<#return referenceNote>
+</#function>
+<#function buildMemo payment>
+<#assign paidTransactions = transHash[payment.internalid]>
+<#assign referenceNote = "">
+<#assign paidTransactionsCount = paidTransactions?size>
+<#if (paidTransactionsCount >= 1)>
+<#list paidTransactions as transaction>
+<#if transaction.tranid?has_content>
+<#assign referenceNote = referenceNote + transaction.memo>
+<#if (paidTransactionsCount > 1 && transaction_index != paidTransactionsCount - 1)>
+<#assign referenceNote = referenceNote + ",">
+</#if>
+</#if>
+</#list>
+</#if>
+<#return referenceNote>
+</#function>
